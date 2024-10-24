@@ -1,0 +1,35 @@
+---
+- name: Configure hosts
+  hosts: all
+
+  tasks:
+  - name: create user hadoop
+    ansible.builtin.user:
+      name: hadoop
+      create_home: yes
+      generate_ssh_key: yes
+      ssh_key_bits: 2048
+      ssh_key_file: .ssh/id_rsa
+
+  - name: configure /etc/hosts
+    lineinfile:
+      dest: /etc/hosts
+      regexp: ".*{{ hostvars[item]['ansible_facts']['nodename'] }}$"
+      line: "{{ hostvars[item].internal_ip }} {{ hostvars[item]['ansible_facts']['nodename'] }}"
+      state: present
+    when: hostvars[item].internal_ip is defined
+    with_items: "{{ groups.all }}"
+
+  - name: Collect ssh public keys
+    shell: /bin/cat /home/hadoop/.ssh/id_rsa.pub
+    register: ssh_keys
+    no_log: yes
+
+  - name: Allow passwordless SSH between all hosts
+    lineinfile:
+      create: yes
+      dest: /home/hadoop/.ssh/authorized_keys
+      state: present
+      line:  "{{ hostvars[item]['ssh_keys']['stdout'] }}"
+    with_items: "{{ groups['all']}}"
+

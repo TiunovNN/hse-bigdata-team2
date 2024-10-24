@@ -1,0 +1,25 @@
+datanodes:
+  hosts:
+    node1:
+      # ansible_user: team
+      ansible_become: yes
+      internal_ip: 10.130.0.8
+    node2:
+      # ansible_user: team
+      ansible_become: yes
+      internal_ip: 10.130.0.13
+    node3:
+      # ansible_user: team
+      ansible_become: yes
+      internal_ip: 10.130.0.30
+
+namenodes:
+  hosts:
+    node1:
+      # ansible_user: team
+      ansible_become: true
+secondary_namenodes:
+  hosts:
+    node2:
+      # ansible_user: team
+      ansible_become: true
