@@ -108,11 +108,32 @@
     with_items: "{{ groups['namenodes'] | first }}"
 
   - name: Put hdfs-site.xml
-    ansible.builtin.copy:
-      src: ./namenode_hdfs_site.xml
+    ansible.builtin.template:
+      src: ./namenode_hdfs_site.xml.j2
       dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/hdfs-site.xml
+    with_items: "{{ groups['secondary_namenodes'] | first }}"
 
   - name: Configure workers
     ansible.builtin.template:
       dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/workers
       src: ./workers.j2
+
+
+- name: Configure namenode
+  hosts: namenodes
+  gather_facts: no
+
+  tasks:
+    - name: Namenode format
+      ansible.builtin.shell: hdfs namenode -format
+      become: yes
+      become_user: hadoop
+      become_method: sudo
+      become_flags: '-i'
+
+    - name: Start hdfs
+      ansible.builtin.shell: start-dfs.sh
+      become: yes
+      become_user: hadoop
+      become_method: sudo
+      become_flags: '-i'

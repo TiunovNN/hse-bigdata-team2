@@ -21,5 +21,9 @@
 		<name>dfs.replication</name>
 		<value>3</value>
 	</property>
+  <property>
+    <name>dfs.namenode.secondary.http-address</name>
+    <value>hdfs://{{ hostvars[item]['ansible_hostname'] }}:9000</value>
+  </property>
 </configuration>
 
