@@ -1,0 +1,139 @@
+---
+- name: Configure hosts
+  hosts: all
+
+  tasks:
+  - name: create user hadoop
+    ansible.builtin.user:
+      name: hadoop
+      create_home: yes
+      generate_ssh_key: yes
+      ssh_key_bits: 2048
+      ssh_key_file: .ssh/id_rsa
+
+  - name: configure /etc/hosts
+    lineinfile:
+      dest: /etc/hosts
+      regexp: ".*{{ hostvars[item]['ansible_hostname'] }}$"
+      line: "{{ hostvars[item]['ansible_default_ipv4']['address'] }} {{ hostvars[item]['ansible_hostname'] }} {{hostvars[item]['ansible_fqdn'] }}"
+      state: present
+    with_items: "{{ groups.all }}"
+
+  - name: Collect ssh public keys
+    shell: /bin/cat /home/hadoop/.ssh/id_rsa.pub
+    register: ssh_keys
+    no_log: yes
+
+  - name: Allow passwordless SSH between all hosts
+    lineinfile:
+      create: yes
+      dest: /home/hadoop/.ssh/authorized_keys
+      state: present
+      line:  "{{ hostvars[item]['ssh_keys']['stdout'] }}"
+      group: hadoop
+      owner: hadoop
+    with_items: "{{ groups['all']}}"
+
+  - name: Scan for SSH host keys
+    ansible.builtin.command: ssh-keyscan -H {{ hostvars[item]['ansible_hostname'] }}
+    register: ssh_scan
+    loop: "{{ groups['all'] }}"
+    changed_when: false
+
+  - name: Write the host keys to known hosts
+    ansible.builtin.known_hosts:
+      path: /home/hadoop/.ssh/known_hosts
+      name: "{{ hostvars[item.item]['ansible_hostname'] }}"
+      state: present
+      key: "{{ item.stdout }}"
+    with_items: "{{ ssh_scan.results }}"
+
+  - name: Ensure known_hosts has right permissions
+    ansible.builtin.file:
+      path: /home/hadoop/.ssh/known_hosts
+      group: hadoop
+      owner: hadoop
+
+  - name: Install packages
+    ansible.builtin.package:
+      name:
+        - openjdk-11-jdk
+      state: latest
+
+  - name: Fetch java_home
+    shell: dirname $(dirname $(readlink -f $(which javac)))
+    register: java_home
+    no_log: yes
+
+  - name: Download hadoop
+    ansible.builtin.unarchive:
+      src: https://dlcdn.apache.org/hadoop/common/stable/hadoop-3.4.1.tar.gz
+      dest: /home/hadoop/
+      remote_src: yes
+      creates: /home/hadoop/hadoop-3.4.1
+      group: hadoop
+      owner: hadoop
+    retries: 5
+    delay: 3
+
+  - name: Configure hadoop environment variables in ~/.profile
+    ansible.builtin.blockinfile:
+      path: /home/hadoop/.profile
+      append_newline: true
+      prepend_newline: true
+      block: |
+        export HADOOP_HOME=/home/hadoop/hadoop-3.4.1
+        export JAVA_HOME={{ java_home.stdout }}
+        export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+
+  - name: Configure hadoop environment variables in hadoop-env.sh
+    ansible.builtin.blockinfile:
+      path: /home/hadoop/hadoop-3.4.1/etc/hadoop/hadoop-env.sh
+      append_newline: true
+      prepend_newline: true
+      block: |
+        export JAVA_HOME={{ java_home.stdout }}
+
+  - name: Check hadoop run
+    ansible.builtin.shell: hadoop version
+    become: yes
+    become_user: hadoop
+    become_method: sudo
+    become_flags: '-i'
+
+  - name: Edit core-site.xml
+    ansible.builtin.template:
+      src: ./namenode_core_site.xml.j2
+      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/core-site.xml
+    with_items: "{{ groups['namenodes'] | first }}"
+
+  - name: Put hdfs-site.xml
+    ansible.builtin.template:
+      src: ./namenode_hdfs_site.xml.j2
+      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/hdfs-site.xml
+    with_items: "{{ groups['secondary_namenodes'] | first }}"
+
+  - name: Configure workers
+    ansible.builtin.template:
+      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/workers
+      src: ./workers.j2
+
+
+- name: Configure namenode
+  hosts: namenodes
+  gather_facts: no
+
+  tasks:
+    - name: Namenode format
+      ansible.builtin.shell: hdfs namenode -format
+      become: yes
+      become_user: hadoop
+      become_method: sudo
+      become_flags: '-i'
+
+    - name: Start hdfs
+      ansible.builtin.shell: start-dfs.sh
+      become: yes
+      become_user: hadoop
+      become_method: sudo
+      become_flags: '-i'
