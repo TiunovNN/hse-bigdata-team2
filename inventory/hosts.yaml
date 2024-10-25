@@ -1,22 +1,22 @@
 datanodes:
   hosts:
     node1:
-      # ansible_user: team
       ansible_become: yes
+      #ansible_become_password: secretpassword
     node2:
-      # ansible_user: team
       ansible_become: yes
+      #ansible_become_password: secretpassword
     node3:
-      # ansible_user: team
       ansible_become: yes
+      #ansible_become_password: secretpassword
 
 namenodes:
   hosts:
     node1:
-      # ansible_user: team
-      ansible_become: true
+      ansible_become: yes
+      #ansible_become_password: secretpassword
 secondary_namenodes:
   hosts:
     node2:
-      # ansible_user: team
-      ansible_become: true
+      ansible_become: yes
+      #ansible_become_password: secretpassword
