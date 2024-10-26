@@ -20,3 +20,9 @@ secondary_namenodes:
     node2:
       ansible_become: yes
       #ansible_become_password: secretpassword
+
+jumpnodes:
+  hosts:
+    node1:
+      ansible_become: yes
+      #ansible_become_password: secretpassword

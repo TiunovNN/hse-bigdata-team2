@@ -1,0 +1,77 @@
+---
+- name: Configure yarn
+  hosts: all
+  tasks:
+
+  - name: Copy mapred-site.xml
+    ansible.builtin.copy:
+      src: ./mapred-site.xml
+      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/mapred-size.xml
+      owner: hadoop
+      group: hadoop
+
+  - name: Copy yarn-site.xml
+    ansible.builtin.copy:
+      src: ./yarn-site.xml
+      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/yarn-size.xml
+      owner: hadoop
+      group: hadoop
+
+- name: Start YARN
+  hosts: namenodes
+  tasks:
+  - name: Start yarn
+    ansible.builtin.shell: start-yarn.sh
+    become: yes
+    become_user: hadoop
+    become_method: sudo
+    become_flags: '-i'
+
+  - name: Start mapred
+    ansible.builtin.shell: mapred --daemon start historyserver
+    become: yes
+    become_user: hadoop
+    become_method: sudo
+    become_flags: '-i'
+
+- name: Configure nginx
+  hosts: jumpnodes
+  tasks:
+    - name: Ensure installed nginx
+      ansible.builtin.package:
+        name:
+          - nginx
+        state: latest
+
+    - name: Proxy to yarn
+      ansible.builtin.template:
+        src: ./nginx.j2
+        dest: /etc/nginx/sites-available/ya
+      with_items: "{{ groups['namenodes'] | first }}"
+      vars:
+        port: 8088
+      notify: Restart nginx
+
+    - name: Proxy to hadoop
+      ansible.builtin.template:
+        src: ./nginx.j2
+        dest: /etc/nginx/sites-available/dh
+      with_items: "{{ groups['namenodes'] | first }}"
+      vars:
+        port: 19888
+      notify: Restart nginx
+
+    - name: Proxy to namenode
+      ansible.builtin.template:
+        src: ./nginx.j2
+        dest: /etc/nginx/sites-available/nn
+      with_items: "{{ groups['namenodes'] | first }}"
+      vars:
+        port: 9870
+      notify: Restart nginx
+
+  handlers:
+    - name: Restart nginx
+      service:
+        name: nginx
+        state: reloaded
