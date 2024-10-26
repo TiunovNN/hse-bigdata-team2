@@ -77,3 +77,14 @@ $ ansible -i inventory -m ping all
 ```shell
 ansible-playbook -i inventory playbooks/configure_hdfs.yml
 ```
+
+
+## Homework 2
+Развернуть YARN и опубликовать веб-интерфейсы основных и вспомогательных демонов кластера для внешнего использования.
+Поднять yarn с history сервером и опубликовать webui всех датанод, непосредственно кластера и Historyjob сервера, чтобы мы могли их видеть через общий веб интерфейс.
+
+### Запуск настройки
+
+```shell
+ansible-playbook -i inventory playbooks/configure_yarn.yml
+```

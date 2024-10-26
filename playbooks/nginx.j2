@@ -1,0 +1,10 @@
+server {
+        listen {{ port }} default_server;
+        root /var/www/html;
+
+        server_name _;
+
+        location / {
+                proxy_pass http://{{ hostvars[item]['ansible_hostname'] }}:{{ port }};
+        }
+}
