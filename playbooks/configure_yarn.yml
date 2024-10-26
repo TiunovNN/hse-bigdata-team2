@@ -75,8 +75,14 @@
       with_items: "{{ services }}"
       notify: Restart nginx
 
+    - name: Disable default
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+
   handlers:
     - name: Restart nginx
       service:
         name: nginx
-        state: reloaded
+        state: restart
