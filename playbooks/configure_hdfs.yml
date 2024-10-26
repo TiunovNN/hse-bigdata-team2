@@ -1,6 +1,9 @@
 ---
 - name: Configure hosts
-  hosts: all
+  hosts:
+    - datanodes
+    - namenodes
+    - secondary_namenodes
 
   tasks:
   - name: create user hadoop
@@ -17,7 +20,7 @@
       regexp: ".*{{ hostvars[item]['ansible_hostname'] }}$"
       line: "{{ hostvars[item]['ansible_default_ipv4']['address'] }} {{ hostvars[item]['ansible_hostname'] }} {{hostvars[item]['ansible_fqdn'] }}"
       state: present
-    with_items: "{{ groups.all }}"
+    with_items: "{{ ansible_play_batch }}"
 
   - name: Collect ssh public keys
     shell: /bin/cat /home/hadoop/.ssh/id_rsa.pub
@@ -32,12 +35,12 @@
       line:  "{{ hostvars[item]['ssh_keys']['stdout'] }}"
       group: hadoop
       owner: hadoop
-    with_items: "{{ groups['all']}}"
+    with_items: "{{ ansible_play_batch }}"
 
   - name: Scan for SSH host keys
     ansible.builtin.command: ssh-keyscan -H {{ hostvars[item]['ansible_hostname'] }}
     register: ssh_scan
-    loop: "{{ groups['all'] }}"
+    with_items: "{{ ansible_play_batch }}"
     changed_when: false
 
   - name: Write the host keys to known hosts

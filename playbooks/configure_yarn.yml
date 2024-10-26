@@ -1,6 +1,9 @@
 ---
 - name: Configure yarn
-  hosts: all
+  hosts:
+  - datanodes
+  - namenodes
+  - secondary_namenodes
   tasks:
 
   - name: Copy mapred-site.xml
@@ -36,38 +39,40 @@
 
 - name: Configure nginx
   hosts: jumpnodes
+  vars:
+    services:
+    - {port: 8088, name: 'ya'}
+    - {port: 19888, name: 'dh'}
+    - {port: 9870, name: 'nn'}
+    namenode: "{{ groups['namenodes'] | map('extract', hostvars, 'ansible_hostname') | first}}"
   tasks:
+    - name: configure /etc/hosts
+      lineinfile:
+        dest: /etc/hosts
+        regexp: ".*{{ hostvars[item]['ansible_hostname'] }}$"
+        line: "{{ hostvars[item]['ansible_default_ipv4']['address'] }} {{ hostvars[item]['ansible_hostname'] }} {{hostvars[item]['ansible_fqdn'] }}"
+        state: present
+      with_items: "{{ groups['namenodes']}}"
+
     - name: Ensure installed nginx
       ansible.builtin.package:
         name:
           - nginx
         state: latest
 
-    - name: Proxy to yarn
+    - name: Configure proxy
       ansible.builtin.template:
         src: ./nginx.j2
-        dest: /etc/nginx/sites-available/ya
-      with_items: "{{ groups['namenodes'] | first }}"
-      vars:
-        port: 8088
+        dest: "/etc/nginx/sites-available/{{ item.name }}"
+      with_items: "{{ services }}"
       notify: Restart nginx
 
-    - name: Proxy to hadoop
-      ansible.builtin.template:
-        src: ./nginx.j2
-        dest: /etc/nginx/sites-available/dh
-      with_items: "{{ groups['namenodes'] | first }}"
-      vars:
-        port: 19888
-      notify: Restart nginx
-
-    - name: Proxy to namenode
-      ansible.builtin.template:
-        src: ./nginx.j2
-        dest: /etc/nginx/sites-available/nn
-      with_items: "{{ groups['namenodes'] | first }}"
-      vars:
-        port: 9870
+    - name: Enable proxy
+      ansible.builtin.file:
+        src: "/etc/nginx/sites-available/{{ item.name}}"
+        dest: "/etc/nginx/sites-enabled/{{ item.name }}"
+        state: link
+      with_items: "{{ services }}"
       notify: Restart nginx
 
   handlers:
