@@ -1,0 +1,12 @@
+[Unit]
+Description=YARN
+Requires=hdfs.service
+Requires=yarn.service
+
+[Service]
+Type=simple
+ExecStart=/home/hadoop/hadoop-3.4.1/bin/mapred historyserver
+User=hadoop
+
+[Install]
+WantedBy=multi-user.target

@@ -23,7 +23,11 @@
 	</property>
   <property>
     <name>dfs.namenode.secondary.http-address</name>
-    <value>hdfs://{{ hostvars[item]['ansible_hostname'] }}:9000</value>
+    <value>hdfs://{{ secondary_namenode }}:9000</value>
+  </property>
+  <property>
+    <name>dfs.namenode.http-address.{{ namenode }}.nn1</name>
+    <value>{{ namenode }}:9870</value>
   </property>
 </configuration>
 
