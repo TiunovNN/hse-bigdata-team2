@@ -88,3 +88,24 @@ ansible-playbook -i inventory playbooks/configure_hdfs.yml
 ```shell
 ansible-playbook -i inventory playbooks/configure_yarn.yml
 ```
+
+## Homework 3
+Развертывание Apache Hive
+
+1. Установить hive
+2. Развернуть Hive в конфигурации пригодной для производственной эксплуатации, т.е.
+с отдельным хранилищем метаданных.
+3. Загрузить данные на hdfs
+4. Трансформировать загруженные данные в таблицу Hive.
+5. Преобразовать полученную таблицу в партиционированную.
+
+
+### Запуск настройки
+
+```shell
+ansible-playbook -i inventory playbooks/configure_hive.yml
+```
+
+### Работа с данными
+
+**TODO**

@@ -1,51 +1,60 @@
 ---
-- name: Configure yarn
+- name: Configure hosts
   hosts:
   - namenodes
   tasks:
-
-  - name: Copy mapred-site.xml
-    ansible.builtin.copy:
-      src: ./mapred-site.xml
-      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/mapred-size.xml
-      owner: hadoop
+  - name: Download hive
+    ansible.builtin.unarchive:
+      src: https://dlcdn.apache.org/hive/hive-4.0.1/apache-hive-4.0.1-bin.tar.gz
+      dest: /home/hadoop/
+      remote_src: yes
+      creates: /home/hadoop/apache-hive-4.0.1-bin
       group: hadoop
-
-  - name: Copy yarn-site.xml
-    ansible.builtin.copy:
-      src: ./yarn-site.xml
-      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/yarn-size.xml
       owner: hadoop
-      group: hadoop
+    retries: 5
+    delay: 3
 
-- name: Start YARN
-  hosts: namenodes
-  tasks:
-  - name: Create MapReduce services
-    ansible.builtin.copy:
-      src: "./{{ item }}.service"
-      dest: "/etc/systemd/system/{{ item }}.service"
+  - name: Configure hive environment variables in ~/.profile
+    ansible.builtin.blockinfile:
+      path: /home/hadoop/.profile
+      append_newline: true
+      prepend_newline: true
+      marker: "# {mark} ANSIBLE MANAGED BLOCK HIVE"
+      block: |
+        export HIVE_HOME=/home/hadoop/apache-hive-4.0.1-bin
+        export PATH=$PATH:$HIVE_HOME/bin
+
+  - name: Configure HDFS for Hive
+    ansible.builtin.shell: "{{ item }}"
+    become: yes
+    become_user: hadoop
+    become_method: sudo
+    become_flags: '-i'
     loop:
-      - yarn
-      - mapred-historyserver
+      - hdfs dfs -mkdir -p /tmp
+      - hdfs dfs -mkdir -p /user/hive/warehouse
+      - hdfs dfs -chmod g+w /tmp
+      - hdfs dfs -chmod g+w /user/hive/warehouse
+      - schematool -dbType derby -initOrUpgradeSchema
 
-  - name: Enable MapReduce services
+  - name: Create hive.service
+    ansible.builtin.copy:
+      src: ./hive.service
+      dest: /etc/systemd/system/hive.service
+
+  - name: Enable hive service
     ansible.builtin.systemd_service:
       daemon_reload: true
       enabled: true
-      name: "{{ item }}.service"
+      name: hive.service
       state: started
-    loop:
-      - yarn
-      - mapred-historyserver
 
 
 - name: Configure nginx
   hosts: jumpnodes
   vars:
     services:
-    - {port: 8088, name: 'ya'}
-    - {port: 19888, name: 'dh'}
+    - {port: 10002, name: 'hive'}
     namenode: "{{ groups['namenodes'] | map('extract', hostvars, 'ansible_hostname') | first}}"
   tasks:
     - name: configure /etc/hosts

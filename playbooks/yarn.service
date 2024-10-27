@@ -1,0 +1,13 @@
+[Unit]
+Description=YARN
+Requires=hdfs.service
+
+[Service]
+Type=oneshot
+ExecStart=/home/hadoop/hadoop-3.4.1/sbin/start-yarn.sh
+ExecStop=/home/hadoop/hadoop-3.4.1/sbin/stop-yarn.sh
+User=hadoop
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target
