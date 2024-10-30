@@ -42,6 +42,8 @@
     register: ssh_scan
     with_items: "{{ ansible_play_batch }}"
     changed_when: false
+    retries: 5
+    delay: 3
 
   - name: Write the host keys to known hosts
     ansible.builtin.known_hosts:
