@@ -133,12 +133,29 @@
   gather_facts: no
 
   tasks:
+    - name: Gather service
+      ansible.builtin.service_facts:
+
+    - name: Stop HDFS service
+      ansible.builtin.systemd_service:
+        enabled: true
+        name: hdfs.service
+        state: stopped
+      when: ansible_facts.services['hdfs.service'] is defined
+
     - name: Namenode format
       ansible.builtin.shell: hdfs namenode -format
       become: yes
       become_user: hadoop
       become_method: sudo
       become_flags: '-i -S'
+
+    - name: Stop HDFS service
+      ansible.builtin.systemd_service:
+        enabled: true
+        name: hdfs.service
+        state: stopped
+      when: ansible_facts.services['hdfs.service'] is defined
 
 - name: Confure hdfs.service
   gather_facts: no
