@@ -57,10 +57,11 @@
       with_items: "{{ groups['namenodes']}}"
 
     - name: Ensure installed nginx
-      ansible.builtin.package:
+      ansible.builtin.apt:
         name:
           - nginx
         state: latest
+        update_cache: yes
 
     - name: Configure proxy
       ansible.builtin.template:

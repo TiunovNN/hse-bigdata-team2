@@ -79,8 +79,8 @@ datanodes:
     node1:
       ansible_become: yes
       ansible_user: team
-      ansible_become_password: "secretpassword"
-      ansible_ssh_pass: "secretpassword" # кавычки обязательны
+      ansible_become_password: 'secretpassword'
+      ansible_ssh_pass: 'secretpassword' # одинарные кавычки обязательны
 ```
 
 Чтобы убедится, что правильно настроили нужно выполнить следующую команду:

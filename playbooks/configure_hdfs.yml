@@ -60,10 +60,11 @@
       owner: hadoop
 
   - name: Install packages
-    ansible.builtin.package:
+    ansible.builtin.apt:
       name:
         - openjdk-11-jdk
       state: latest
+      update_cache: yes
 
   - name: Fetch java_home
     shell: dirname $(dirname $(readlink -f $(which javac)))
@@ -150,12 +151,6 @@
       become_method: sudo
       become_flags: '-i -S'
 
-    - name: Stop HDFS service
-      ansible.builtin.systemd_service:
-        enabled: true
-        name: hdfs.service
-        state: stopped
-      when: ansible_facts.services['hdfs.service'] is defined
 
 - name: Confure hdfs.service
   gather_facts: no
@@ -192,10 +187,11 @@
       with_items: "{{ groups['namenodes']}}"
 
     - name: Ensure installed nginx
-      ansible.builtin.package:
+      ansible.builtin.apt:
         name:
           - nginx
         state: latest
+        update_cache: yes
 
     - name: Configure proxy
       ansible.builtin.template:
