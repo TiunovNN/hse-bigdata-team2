@@ -4,6 +4,8 @@
     - datanodes
     - namenodes
     - secondary_namenodes
+  retries: 5
+  delay: 3
 
   tasks:
   - name: create user hadoop
@@ -103,7 +105,7 @@
     become: yes
     become_user: hadoop
     become_method: sudo
-    become_flags: '-i'
+    become_flags: '-i -S'
 
   - name: Edit core-site.xml
     ansible.builtin.template:
@@ -136,7 +138,7 @@
       become: yes
       become_user: hadoop
       become_method: sudo
-      become_flags: '-i'
+      become_flags: '-i -S'
 
 - name: Confure hdfs.service
   gather_facts: no

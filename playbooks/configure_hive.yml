@@ -29,7 +29,7 @@
     become: yes
     become_user: hadoop
     become_method: sudo
-    become_flags: '-i'
+    become_flags: '-i -S'
     loop:
       - hdfs dfs -mkdir -p /tmp
       - hdfs dfs -mkdir -p /user/hive/warehouse
