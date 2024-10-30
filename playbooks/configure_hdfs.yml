@@ -42,6 +42,8 @@
     register: ssh_scan
     with_items: "{{ ansible_play_batch }}"
     changed_when: false
+    retries: 5
+    delay: 3
 
   - name: Write the host keys to known hosts
     ansible.builtin.known_hosts:
@@ -58,10 +60,11 @@
       owner: hadoop
 
   - name: Install packages
-    ansible.builtin.package:
+    ansible.builtin.apt:
       name:
         - openjdk-11-jdk
       state: latest
+      update_cache: yes
 
   - name: Fetch java_home
     shell: dirname $(dirname $(readlink -f $(which javac)))
@@ -103,7 +106,7 @@
     become: yes
     become_user: hadoop
     become_method: sudo
-    become_flags: '-i'
+    become_flags: '-i -S'
 
   - name: Edit core-site.xml
     ansible.builtin.template:
@@ -131,12 +134,23 @@
   gather_facts: no
 
   tasks:
+    - name: Gather service
+      ansible.builtin.service_facts:
+
+    - name: Stop HDFS service
+      ansible.builtin.systemd_service:
+        enabled: true
+        name: hdfs.service
+        state: stopped
+      when: ansible_facts.services['hdfs.service'] is defined
+
     - name: Namenode format
-      ansible.builtin.shell: hdfs namenode -format
+      ansible.builtin.shell: hdfs namenode -format -force -nonInteractive
       become: yes
       become_user: hadoop
       become_method: sudo
-      become_flags: '-i'
+      become_flags: '-i -S'
+
 
 - name: Confure hdfs.service
   gather_facts: no
@@ -173,10 +187,11 @@
       with_items: "{{ groups['namenodes']}}"
 
     - name: Ensure installed nginx
-      ansible.builtin.package:
+      ansible.builtin.apt:
         name:
           - nginx
         state: latest
+        update_cache: yes
 
     - name: Configure proxy
       ansible.builtin.template:

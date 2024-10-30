@@ -29,7 +29,7 @@
     become: yes
     become_user: hadoop
     become_method: sudo
-    become_flags: '-i'
+    become_flags: '-i -S'
     loop:
       - hdfs dfs -mkdir -p /tmp
       - hdfs dfs -mkdir -p /user/hive/warehouse
@@ -66,10 +66,11 @@
       with_items: "{{ groups['namenodes']}}"
 
     - name: Ensure installed nginx
-      ansible.builtin.package:
+      ansible.builtin.apt:
         name:
           - nginx
         state: latest
+        update_cache: yes
 
     - name: Configure proxy
       ansible.builtin.template:

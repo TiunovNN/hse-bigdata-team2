@@ -1,14 +1,34 @@
 # hse-bigdata-team2
 
 ## Предварительная настройка
+На компьютере должен быть установлен python и git
 
-### Настроить ansible
-На компьютере должен быть установлен python
+Для Ubuntu 20.04 делаем так:
+```shell
+$ sudo apt update && sudo apt install -y python3-pip python3-venv git
+```
+
+Если подключение к хостам выполняется через пароль, а не через ssh-ключ, то нужно еще установить пакет `sshpass`
 
 ```shell
-$ python -m venv .venv
-$ source .venv/bin/activate
-$ python -r requirements.txt
+$ sudo apt install -y sshpass
+```
+
+Скачиваем код репозитория:
+
+```shell
+$ git clone https://github.com/TiunovNN/hse-bigdata-team2.git
+$ cd hse-bigdata-team2
+```
+
+### Настроить ansible
+
+настраиваем venv
+
+```shell
+~/hse-bigdata-team2$ python3 -m venv .venv
+~/hse-bigdata-team2$ source .venv/bin/activate
+~/hse-bigdata-team2$ python3 -m pip install -r requirements.txt
 ```
 
 Проверяем что ansible готов к работе:
@@ -22,25 +42,25 @@ ansible [core 2.17.5]
 
 Ко всем узла должен быть настроен ssh.
 
-Например, настройках трех узлов с jump-node `~/.ssh/config`
+Например, настройках трех узлов `~/.ssh/config`
 ```config
-Host proxy
-    HostName 176.109.91.4
+Host jumpnode
+    HostName 192.168.1.10
     User team
 
 Host node1
     HostName 192.168.1.11
-    ProxyJump proxy
+    # ProxyJump jumpnode  # если подключаемся через jump-ноду
     User team
 
 Host node2
     HostName 192.168.1.12
-    ProxyJump proxy
+    # ProxyJump jumpnode  # если подключаемся через jump-ноду
     User team
 
 Host node3
     HostName 192.168.1.13
-    ProxyJump proxy
+    # ProxyJump jumpnode  # если подключаемся через jump-ноду
     User team
 ```
 
@@ -48,7 +68,20 @@ Host node3
 
 Если названия нод отличаются от тех, что указаны в [host.yaml](inventory/hosts.yaml), то там нужно подставить правильные названия
 
-Если sudo на хостах требует ввода пароля, то нужно раскоментировать строки `#ansible_become_password: secretpassword` и заменить `secretpassword` на свой
+Если sudo на хостах требует ввода пароля, то нужно раскоментировать строки `#ansible_become_password: secretpassword` и заменить `secretpassword` на свой.
+
+Если подключение к хостам выполняется через пароль, а не через ssh-ключ, то нужно раскоментировать строки `#ansible_ssh_pass: secretpassword` и заменить `secretpassword` на свой.
+
+Например:
+```yaml
+datanodes:
+  hosts:
+    node1:
+      ansible_become: yes
+      ansible_user: team
+      ansible_become_password: 'secretpassword'
+      ansible_ssh_pass: 'secretpassword' # одинарные кавычки обязательны
+```
 
 Чтобы убедится, что правильно настроили нужно выполнить следующую команду:
 
@@ -65,7 +98,7 @@ $ ansible -i inventory -m ping all
 3. Распределение демонов зависит от числа хостов. Более подробная информация будет доступна, когда станет известно количество предоставляемых виртуальных машин.
 4. Кластер должен быть целостным, в логах демонов не должно быть сообщений о критических ошибках и они должны быть в работоспособном состоянии
 Как понять, что кластер целостный:
-Вариант 1. Зайти в интерфейс NameNode в Hadoop. В нем не должны быть деградировавших нод, должны присутстовать 3 работающих DataNode. 
+Вариант 1. Зайти в интерфейс NameNode в Hadoop. В нем не должны быть деградировавших нод, должны присутстовать 3 работающих DataNode.
 Вариант 2. В логах кластера не должно быть критических ошибок
 5. Ограничения по операционной системе: Ubuntu 20 и Debian 10
 6. На узлах должно обеспечение по ssh
