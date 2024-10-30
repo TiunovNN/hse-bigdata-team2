@@ -1,0 +1,3 @@
+db_name: hive_metastore
+db_user: hive
+db_password: hive_password
