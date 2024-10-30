@@ -4,8 +4,6 @@
     - datanodes
     - namenodes
     - secondary_namenodes
-  retries: 5
-  delay: 3
 
   tasks:
   - name: create user hadoop
