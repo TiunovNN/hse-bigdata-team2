@@ -75,10 +75,10 @@
 
   - name: Download hadoop
     ansible.builtin.unarchive:
-      src: https://dlcdn.apache.org/hadoop/common/stable/hadoop-3.4.1.tar.gz
+      src: https://dlcdn.apache.org/hadoop/common/stable/hadoop-3.4.0.tar.gz
       dest: /home/hadoop/
       remote_src: yes
-      creates: /home/hadoop/hadoop-3.4.1
+      creates: /home/hadoop/hadoop-3.4.0
       group: hadoop
       owner: hadoop
     retries: 5
@@ -91,13 +91,13 @@
       append_newline: true
       prepend_newline: true
       block: |
-        export HADOOP_HOME=/home/hadoop/hadoop-3.4.1
+        export HADOOP_HOME=/home/hadoop/hadoop-3.4.0
         export JAVA_HOME={{ java_home.stdout }}
         export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
 
   - name: Configure hadoop environment variables in hadoop-env.sh
     ansible.builtin.blockinfile:
-      path: /home/hadoop/hadoop-3.4.1/etc/hadoop/hadoop-env.sh
+      path: /home/hadoop/hadoop-3.4.0/etc/hadoop/hadoop-env.sh
       append_newline: true
       prepend_newline: true
       block: |
@@ -113,21 +113,21 @@
   - name: Edit core-site.xml
     ansible.builtin.template:
       src: ./namenode_core_site.xml.j2
-      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/core-site.xml
+      dest: /home/hadoop/hadoop-3.4.0/etc/hadoop/core-site.xml
     vars:
       namenode: "{{ groups['namenodes'] | map('extract', hostvars, 'ansible_hostname') | first }}"
 
   - name: Put hdfs-site.xml
     ansible.builtin.template:
       src: ./namenode_hdfs_site.xml.j2
-      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/hdfs-site.xml
+      dest: /home/hadoop/hadoop-3.4.0/etc/hadoop/hdfs-site.xml
     vars:
       secondary_namenode: "{{ groups['secondary_namenodes'] | map('extract', hostvars, 'ansible_hostname') | first }}"
       namenode: "{{ groups['namenodes'] | map('extract', hostvars, 'ansible_hostname') | first }}"
 
   - name: Configure workers
     ansible.builtin.template:
-      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/workers
+      dest: /home/hadoop/hadoop-3.4.0/etc/hadoop/workers
       src: ./workers.j2
 
   - name: Gather service

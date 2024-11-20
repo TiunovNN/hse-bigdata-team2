@@ -7,14 +7,14 @@
   - name: Copy mapred-site.xml
     ansible.builtin.copy:
       src: ./mapred-site.xml
-      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/mapred-size.xml
+      dest: /home/hadoop/hadoop-3.4.0/etc/hadoop/mapred-size.xml
       owner: hadoop
       group: hadoop
 
   - name: Copy yarn-site.xml
     ansible.builtin.copy:
       src: ./yarn-site.xml
-      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/yarn-size.xml
+      dest: /home/hadoop/hadoop-3.4.0/etc/hadoop/yarn-size.xml
       owner: hadoop
       group: hadoop
 

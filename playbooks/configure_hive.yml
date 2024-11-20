@@ -53,9 +53,16 @@
       method: md5
       users: "{{ db_user }}"
       create: true
-      address: samenet
+      source: all
     become: yes
     become_user: postgres
+    notify: restart postgres
+
+  - name: "Configure postgres address"
+    ansible.builtin.lineinfile:
+      dest: /etc/postgresql/16/main/postgresql.conf
+      state: present
+      line:  "listen_addresses = '0.0.0.0'"
     notify: restart postgres
 
   handlers:
@@ -70,10 +77,10 @@
   tasks:
   - name: Download hive
     ansible.builtin.unarchive:
-      src: https://dlcdn.apache.org/hive/hive-4.0.1/apache-hive-4.0.1-bin.tar.gz
+      src: https://archive.apache.org/dist/hive/hive-4.0.0-alpha-2/apache-hive-4.0.0-alpha-2-bin.tar.gz
       dest: /home/hadoop/
       remote_src: yes
-      creates: /home/hadoop/apache-hive-4.0.1-bin
+      creates: /home/hadoop/apache-hive-4.0.0-alpha-2-bin
       group: hadoop
       owner: hadoop
     retries: 5
@@ -86,7 +93,7 @@
       prepend_newline: true
       marker: "# {mark} ANSIBLE MANAGED BLOCK HIVE"
       block: |
-        export HIVE_HOME=/home/hadoop/apache-hive-4.0.1-bin
+        export HIVE_HOME=/home/hadoop/apache-hive-4.0.0-alpha-2-bin
         export HIVE_CONF_DIR=$HIVE_HOME/conf
         export HIVE_AUX_JARS_PATH=$HIVE_HOME/lib/*
         export PATH=$PATH:$HIVE_HOME/bin
@@ -94,7 +101,7 @@
   - name: Download postgres driver
     ansible.builtin.get_url:
       url: https://jdbc.postgresql.org/download/postgresql-42.7.4.jar
-      dest: /home/hadoop/apache-hive-4.0.1-bin/lib/postgresql-42.7.4.jar
+      dest: /home/hadoop/apache-hive-4.0.0-alpha-2-bin/lib/postgresql-42.7.4.jar
       group: hadoop
       owner: hadoop
     retries: 5
@@ -103,7 +110,7 @@
   - name: Edit hive-site.xml
     ansible.builtin.template:
       src: ./hive_site.xml.j2
-      dest: /home/hadoop/apache-hive-4.0.1-bin/conf/hive-site.xml
+      dest: /home/hadoop/apache-hive-4.0.0-alpha-2-bin/conf/hive-site.xml
     vars:
       namenode: "{{ groups['namenodes'] | map('extract', hostvars, 'ansible_hostname') | first }}"
 
@@ -118,7 +125,7 @@
       - hdfs dfs -mkdir -p /user/hive/warehouse
       - hdfs dfs -chmod g+w /tmp
       - hdfs dfs -chmod g+w /user/hive/warehouse
-      - schematool -dbType postgres -initOrUpgradeSchema
+      - schematool -dbType postgres -initSchema
 
   - name: Create hive.service
     ansible.builtin.copy:
