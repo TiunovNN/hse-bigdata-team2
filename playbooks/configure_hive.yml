@@ -1,14 +1,87 @@
 ---
+- name: Configure Postgres
+  hosts:
+  - namenodes
+
+  tasks:
+  - name: Install postgres
+    ansible.builtin.apt:
+      name:
+        - postgresql
+        - libpq-dev
+        - python3-psycopg2
+      state: latest
+      update_cache: yes
+
+  - name: "Start and enable services"
+    ansible.builtin.service:
+      name: postgresql
+      state: started
+      enabled: yes
+
+  - name: "Create db user"
+    community.postgresql.postgresql_user:
+      state: present
+      name: "{{ db_user }}"
+      password: "{{ db_password }}"
+    become: yes
+    become_user: postgres
+
+  - name: "Create app database"
+    community.postgresql.postgresql_db:
+      state: present
+      name: "{{ db_name }}"
+      owner: "{{ db_user }}"
+    become: yes
+    become_user: postgres
+
+  - name: "Grant db user access to app db"
+    community.postgresql.postgresql_privs:
+      type: database
+      database: "{{ db_name }}"
+      roles: "{{ db_user }}"
+      grant_option: no
+      privs: all
+
+    become: yes
+    become_user: postgres
+
+  - name: "Allow md5 connection for the db user"
+    community.postgresql.postgresql_pg_hba:
+      dest: "/etc/postgresql/16/main/pg_hba.conf"
+      contype: host
+      databases: "{{ db_name }}"
+      method: md5
+      users: "{{ db_user }}"
+      create: true
+      source: all
+    become: yes
+    become_user: postgres
+    notify: restart postgres
+
+  - name: "Configure postgres address"
+    ansible.builtin.lineinfile:
+      dest: /etc/postgresql/16/main/postgresql.conf
+      state: present
+      line:  "listen_addresses = '0.0.0.0'"
+    notify: restart postgres
+
+  handlers:
+  - name: restart postgres
+    service:
+      name: postgresql
+      state: restarted
+
 - name: Configure hosts
   hosts:
   - namenodes
   tasks:
   - name: Download hive
     ansible.builtin.unarchive:
-      src: https://dlcdn.apache.org/hive/hive-4.0.1/apache-hive-4.0.1-bin.tar.gz
+      src: https://archive.apache.org/dist/hive/hive-4.0.0-alpha-2/apache-hive-4.0.0-alpha-2-bin.tar.gz
       dest: /home/hadoop/
       remote_src: yes
-      creates: /home/hadoop/apache-hive-4.0.1-bin
+      creates: /home/hadoop/apache-hive-4.0.0-alpha-2-bin
       group: hadoop
       owner: hadoop
     retries: 5
@@ -21,8 +94,26 @@
       prepend_newline: true
       marker: "# {mark} ANSIBLE MANAGED BLOCK HIVE"
       block: |
-        export HIVE_HOME=/home/hadoop/apache-hive-4.0.1-bin
+        export HIVE_HOME=/home/hadoop/apache-hive-4.0.0-alpha-2-bin
+        export HIVE_CONF_DIR=$HIVE_HOME/conf
+        export HIVE_AUX_JARS_PATH=$HIVE_HOME/lib/*
         export PATH=$PATH:$HIVE_HOME/bin
+
+  - name: Download postgres driver
+    ansible.builtin.get_url:
+      url: https://jdbc.postgresql.org/download/postgresql-42.7.4.jar
+      dest: /home/hadoop/apache-hive-4.0.0-alpha-2-bin/lib/postgresql-42.7.4.jar
+      group: hadoop
+      owner: hadoop
+    retries: 5
+    delay: 3
+
+  - name: Edit hive-site.xml
+    ansible.builtin.template:
+      src: ./hive_site.xml.j2
+      dest: /home/hadoop/apache-hive-4.0.0-alpha-2-bin/conf/hive-site.xml
+    vars:
+      namenode: "{{ groups['namenodes'] | map('extract', hostvars, 'ansible_hostname') | first }}"
 
   - name: Configure HDFS for Hive
     ansible.builtin.shell: "{{ item }}"
@@ -35,7 +126,7 @@
       - hdfs dfs -mkdir -p /user/hive/warehouse
       - hdfs dfs -chmod g+w /tmp
       - hdfs dfs -chmod g+w /user/hive/warehouse
-      - schematool -dbType derby -initOrUpgradeSchema
+      - schematool -dbType postgres -initOrUpgradeSchema
 
   - name: Create hive.service
     ansible.builtin.copy:
@@ -71,6 +162,15 @@
           - nginx
         state: latest
         update_cache: yes
+    - name: Add a user to a password file and ensure permissions are set
+      community.general.htpasswd:
+        path: /etc/nginx/htpasswd
+        name: "{{ nginx_user }}"
+        password: "{{ nginx_password }}"
+        owner: root
+        group: www-data
+        mode: 0640
+        state: present
 
     - name: Configure proxy
       ansible.builtin.template:

@@ -25,6 +25,7 @@
   - name: Collect ssh public keys
     shell: /bin/cat /home/hadoop/.ssh/id_rsa.pub
     register: ssh_keys
+    changed_when: false
     no_log: yes
 
   - name: Allow passwordless SSH between all hosts
@@ -52,6 +53,7 @@
       state: present
       key: "{{ item.stdout }}"
     with_items: "{{ ssh_scan.results }}"
+    no_log: yes
 
   - name: Ensure known_hosts has right permissions
     ansible.builtin.file:
@@ -73,10 +75,10 @@
 
   - name: Download hadoop
     ansible.builtin.unarchive:
-      src: https://dlcdn.apache.org/hadoop/common/stable/hadoop-3.4.1.tar.gz
+      src: https://dlcdn.apache.org/hadoop/common/hadoop-3.4.0/hadoop-3.4.0.tar.gz
       dest: /home/hadoop/
       remote_src: yes
-      creates: /home/hadoop/hadoop-3.4.1
+      creates: /home/hadoop/hadoop-3.4.0
       group: hadoop
       owner: hadoop
     retries: 5
@@ -89,13 +91,13 @@
       append_newline: true
       prepend_newline: true
       block: |
-        export HADOOP_HOME=/home/hadoop/hadoop-3.4.1
+        export HADOOP_HOME=/home/hadoop/hadoop-3.4.0
         export JAVA_HOME={{ java_home.stdout }}
         export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
 
   - name: Configure hadoop environment variables in hadoop-env.sh
     ansible.builtin.blockinfile:
-      path: /home/hadoop/hadoop-3.4.1/etc/hadoop/hadoop-env.sh
+      path: /home/hadoop/hadoop-3.4.0/etc/hadoop/hadoop-env.sh
       append_newline: true
       prepend_newline: true
       block: |
@@ -111,45 +113,45 @@
   - name: Edit core-site.xml
     ansible.builtin.template:
       src: ./namenode_core_site.xml.j2
-      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/core-site.xml
+      dest: /home/hadoop/hadoop-3.4.0/etc/hadoop/core-site.xml
     vars:
       namenode: "{{ groups['namenodes'] | map('extract', hostvars, 'ansible_hostname') | first }}"
 
   - name: Put hdfs-site.xml
     ansible.builtin.template:
       src: ./namenode_hdfs_site.xml.j2
-      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/hdfs-site.xml
+      dest: /home/hadoop/hadoop-3.4.0/etc/hadoop/hdfs-site.xml
     vars:
       secondary_namenode: "{{ groups['secondary_namenodes'] | map('extract', hostvars, 'ansible_hostname') | first }}"
       namenode: "{{ groups['namenodes'] | map('extract', hostvars, 'ansible_hostname') | first }}"
 
   - name: Configure workers
     ansible.builtin.template:
-      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/workers
+      dest: /home/hadoop/hadoop-3.4.0/etc/hadoop/workers
       src: ./workers.j2
 
+  - name: Gather service
+    ansible.builtin.service_facts:
 
-- name: Configure namenode
-  hosts: namenodes
-  gather_facts: no
+  - name: Stop HDFS service
+    ansible.builtin.systemd_service:
+      enabled: true
+      name: hdfs.service
+      state: stopped
+    when: ansible_facts.services['hdfs.service']['status'] | default('not-found') != 'not-found'
 
-  tasks:
-    - name: Gather service
-      ansible.builtin.service_facts:
+  - name: Remove old info
+    ansible.builtin.file:
+      state: absent
+      path: /tmp/hadoop-hadoop
 
-    - name: Stop HDFS service
-      ansible.builtin.systemd_service:
-        enabled: true
-        name: hdfs.service
-        state: stopped
-      when: ansible_facts.services['hdfs.service'] is defined
-
-    - name: Namenode format
-      ansible.builtin.shell: hdfs namenode -format -force -nonInteractive
-      become: yes
-      become_user: hadoop
-      become_method: sudo
-      become_flags: '-i -S'
+  - name: Namenode format
+    ansible.builtin.shell: hdfs namenode -format -force -nonInteractive
+    become: yes
+    become_user: hadoop
+    become_method: sudo
+    become_flags: '-i -S'
+    when: inventory_hostname in groups['namenodes']
 
 
 - name: Confure hdfs.service
@@ -169,7 +171,7 @@
         daemon_reload: true
         enabled: true
         name: hdfs.service
-        state: started
+        state: restarted
 
 - name: Configure nginx
   hosts: jumpnodes
@@ -190,8 +192,21 @@
       ansible.builtin.apt:
         name:
           - nginx
+          - apache2-utils
+          - python3-passlib
         state: latest
         update_cache: yes
+
+    - name: Add a user to a password file and ensure permissions are set
+      community.general.htpasswd:
+        path: /etc/nginx/htpasswd
+        name: "{{ nginx_user }}"
+        password: "{{ nginx_password }}"
+        owner: root
+        group: www-data
+        mode: 0640
+        state: present
+
 
     - name: Configure proxy
       ansible.builtin.template:

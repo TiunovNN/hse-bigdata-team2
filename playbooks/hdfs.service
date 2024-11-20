@@ -4,8 +4,8 @@ Requires=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/home/hadoop/hadoop-3.4.1/sbin/start-dfs.sh
-ExecStop=/home/hadoop/hadoop-3.4.1/sbin/stop-dfs.sh
+ExecStart=/home/hadoop/hadoop-3.4.0/sbin/start-dfs.sh
+ExecStop=/home/hadoop/hadoop-3.4.0/sbin/stop-dfs.sh
 User=hadoop
 RemainAfterExit=true
 

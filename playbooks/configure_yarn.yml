@@ -7,14 +7,14 @@
   - name: Copy mapred-site.xml
     ansible.builtin.copy:
       src: ./mapred-site.xml
-      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/mapred-size.xml
+      dest: /home/hadoop/hadoop-3.4.0/etc/hadoop/mapred-size.xml
       owner: hadoop
       group: hadoop
 
   - name: Copy yarn-site.xml
     ansible.builtin.copy:
       src: ./yarn-site.xml
-      dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/yarn-size.xml
+      dest: /home/hadoop/hadoop-3.4.0/etc/hadoop/yarn-size.xml
       owner: hadoop
       group: hadoop
 
@@ -62,6 +62,16 @@
           - nginx
         state: latest
         update_cache: yes
+
+    - name: Add a user to a password file and ensure permissions are set
+      community.general.htpasswd:
+        path: /etc/nginx/htpasswd
+        name: "{{ nginx_user }}"
+        password: "{{ nginx_password }}"
+        owner: root
+        group: www-data
+        mode: 0640
+        state: present
 
     - name: Configure proxy
       ansible.builtin.template:

@@ -89,6 +89,10 @@ datanodes:
 $ ansible -i inventory -m ping all
 ```
 
+### Изменить пароль для авторизации в nginx
+
+Напишите свой пароль для авторизации в nginx в файл  [all.yaml](inventory/group_vars/all.yaml)
+
 ## Homework 1
 
 ### Описание
