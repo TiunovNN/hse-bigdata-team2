@@ -7,4 +7,6 @@ server {
         location / {
                 proxy_pass http://{{ namenode }}:{{ item.port }};
         }
+        auth_basic           "Forbidden Area";
+        auth_basic_user_file /etc/nginx/htpasswd;
 }

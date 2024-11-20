@@ -25,6 +25,7 @@
   - name: Collect ssh public keys
     shell: /bin/cat /home/hadoop/.ssh/id_rsa.pub
     register: ssh_keys
+    changed_when: false
     no_log: yes
 
   - name: Allow passwordless SSH between all hosts
@@ -52,6 +53,7 @@
       state: present
       key: "{{ item.stdout }}"
     with_items: "{{ ssh_scan.results }}"
+    no_log: yes
 
   - name: Ensure known_hosts has right permissions
     ansible.builtin.file:
@@ -128,28 +130,28 @@
       dest: /home/hadoop/hadoop-3.4.1/etc/hadoop/workers
       src: ./workers.j2
 
+  - name: Gather service
+    ansible.builtin.service_facts:
 
-- name: Configure namenode
-  hosts: namenodes
-  gather_facts: no
+  - name: Stop HDFS service
+    ansible.builtin.systemd_service:
+      enabled: true
+      name: hdfs.service
+      state: stopped
+    when: ansible_facts.services['hdfs.service'] is defined
 
-  tasks:
-    - name: Gather service
-      ansible.builtin.service_facts:
+  - name: Remove old info
+    ansible.builtin.file:
+      state: absent
+      path: /tmp/hadoop-hadoop
 
-    - name: Stop HDFS service
-      ansible.builtin.systemd_service:
-        enabled: true
-        name: hdfs.service
-        state: stopped
-      when: ansible_facts.services['hdfs.service'] is defined
-
-    - name: Namenode format
-      ansible.builtin.shell: hdfs namenode -format -force -nonInteractive
-      become: yes
-      become_user: hadoop
-      become_method: sudo
-      become_flags: '-i -S'
+  - name: Namenode format
+    ansible.builtin.shell: hdfs namenode -format -force -nonInteractive
+    become: yes
+    become_user: hadoop
+    become_method: sudo
+    become_flags: '-i -S'
+    when: inventory_hostname in groups['namenodes']
 
 
 - name: Confure hdfs.service
@@ -169,7 +171,7 @@
         daemon_reload: true
         enabled: true
         name: hdfs.service
-        state: started
+        state: restarted
 
 - name: Configure nginx
   hosts: jumpnodes
@@ -190,8 +192,21 @@
       ansible.builtin.apt:
         name:
           - nginx
+          - apache2-utils
+          - python3-passlib
         state: latest
         update_cache: yes
+
+    - name: Add a user to a password file and ensure permissions are set
+      community.general.htpasswd:
+        path: /etc/nginx/htpasswd
+        name: "{{ nginx_user }}"
+        password: "{{ nginx_password }}"
+        owner: root
+        group: www-data
+        mode: 0640
+        state: present
+
 
     - name: Configure proxy
       ansible.builtin.template:

@@ -2,17 +2,17 @@ datanodes:
   hosts:
     node1:
       ansible_become: yes
-      ansible_user: team
+      # ansible_user: team
       #ansible_become_password: secretpassword
       #ansible_ssh_pass: secretpassword
     node2:
       ansible_become: yes
-      ansible_user: team
+      # ansible_user: team
       #ansible_become_password: secretpassword
       #ansible_ssh_pass: secretpassword
     node3:
       ansible_become: yes
-      ansible_user: team
+      # ansible_user: team
       #ansible_become_password: secretpassword
       #ansible_ssh_pass: secretpassword
 
@@ -20,14 +20,14 @@ namenodes:
   hosts:
     node1:
       ansible_become: yes
-      ansible_user: team
+      # ansible_user: team
       #ansible_become_password: secretpassword
       #ansible_ssh_pass: secretpassword
 secondary_namenodes:
   hosts:
     node2:
       ansible_become: yes
-      ansible_user: team
+      # ansible_user: team
       #ansible_become_password: secretpassword
       #ansible_ssh_pass: secretpassword
 
@@ -35,6 +35,6 @@ jumpnodes:
   hosts:
     jumpnode:
       ansible_become: yes
-      ansible_user: team
+      # ansible_user: team
       #ansible_become_password: secretpassword
       #ansible_ssh_pass: secretpassword

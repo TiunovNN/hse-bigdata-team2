@@ -63,6 +63,16 @@
         state: latest
         update_cache: yes
 
+    - name: Add a user to a password file and ensure permissions are set
+      community.general.htpasswd:
+        path: /etc/nginx/htpasswd
+        name: "{{ nginx_user }}"
+        password: "{{ nginx_password }}"
+        owner: root
+        group: www-data
+        mode: 0640
+        state: present
+
     - name: Configure proxy
       ansible.builtin.template:
         src: ./nginx.j2
