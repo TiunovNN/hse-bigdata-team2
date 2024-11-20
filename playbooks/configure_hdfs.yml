@@ -75,7 +75,7 @@
 
   - name: Download hadoop
     ansible.builtin.unarchive:
-      src: https://dlcdn.apache.org/hadoop/common/stable/hadoop-3.4.0.tar.gz
+      src: https://dlcdn.apache.org/hadoop/common/hadoop-3.4.0/hadoop-3.4.0.tar.gz
       dest: /home/hadoop/
       remote_src: yes
       creates: /home/hadoop/hadoop-3.4.0
@@ -138,7 +138,7 @@
       enabled: true
       name: hdfs.service
       state: stopped
-    when: ansible_facts.services['hdfs.service'] is defined
+    when: ansible_facts.services['hdfs.service']['status'] | default('not-found') != 'not-found'
 
   - name: Remove old info
     ansible.builtin.file:

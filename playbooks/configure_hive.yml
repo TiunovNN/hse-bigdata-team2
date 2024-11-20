@@ -19,18 +19,19 @@
       state: started
       enabled: yes
 
-  - name: "Create app database"
-    community.postgresql.postgresql_db:
-      state: present
-      name: "{{ db_name }}"
-    become: yes
-    become_user: postgres
-
   - name: "Create db user"
     community.postgresql.postgresql_user:
       state: present
       name: "{{ db_user }}"
       password: "{{ db_password }}"
+    become: yes
+    become_user: postgres
+
+  - name: "Create app database"
+    community.postgresql.postgresql_db:
+      state: present
+      name: "{{ db_name }}"
+      owner: "{{ db_user }}"
     become: yes
     become_user: postgres
 
@@ -125,7 +126,7 @@
       - hdfs dfs -mkdir -p /user/hive/warehouse
       - hdfs dfs -chmod g+w /tmp
       - hdfs dfs -chmod g+w /user/hive/warehouse
-      - schematool -dbType postgres -initSchema
+      - schematool -dbType postgres -initOrUpgradeSchema
 
   - name: Create hive.service
     ansible.builtin.copy:

@@ -4,12 +4,12 @@ Requires=hdfs.service
 Requires=yarn.service
 
 [Service]
-ExecStart=/home/hadoop/apache-hive-4.0.1-bin/bin/hive \
+ExecStart=/home/hadoop/apache-hive-4.0.0-alpha-2-bin/bin/hive \
             --hiveconf hive.server2.enable.doAs=false \
             --hiveconf hive.security.authorization.enabled=false \
             --service hiveserver2
 User=hadoop
-Environment="HADOOP_HOME=/home/hadoop/hadoop-3.4.1"
+Environment="HADOOP_HOME=/home/hadoop/hadoop-3.4.0"
 WorkingDirectory=/home/hadoop
 
 [Install]
