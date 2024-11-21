@@ -5,7 +5,7 @@ Requires=yarn.service
 
 [Service]
 Type=simple
-ExecStart=/home/hadoop/hadoop-3.4.1/bin/mapred historyserver
+ExecStart=/home/hadoop/hadoop-3.4.0/bin/mapred historyserver
 User=hadoop
 
 [Install]
