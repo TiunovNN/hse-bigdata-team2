@@ -1,0 +1,14 @@
+[Unit]
+Description=Spark History Server
+Requires=hdfs.service
+Requires=yarn.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/dash -lc /home/hadoop/spark-3.5.3-bin-without-hadoop/sbin/start-history-server.sh
+ExecStop=/usr/bin/dash -lc /home/hadoop/spark-3.5.3-bin-without-hadoop/sbin/stop-history-server.sh
+User=hadoop
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

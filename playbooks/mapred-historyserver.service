@@ -1,5 +1,5 @@
 [Unit]
-Description=YARN
+Description=MapReduce history
 Requires=hdfs.service
 Requires=yarn.service
 

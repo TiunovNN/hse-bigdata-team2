@@ -143,7 +143,7 @@
   - name: Remove old info
     ansible.builtin.file:
       state: absent
-      path: /tmp/hadoop-hadoop
+      path: /home/hadoop/hdfs/namenode
 
   - name: Namenode format
     ansible.builtin.shell: hdfs namenode -format -force -nonInteractive
