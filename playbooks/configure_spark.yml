@@ -51,7 +51,7 @@
     become_method: sudo
     become_flags: '-i -S'
     loop:
-      - hdfs dfs -mkdir -p /spark-logs
+      - /home/hadoop/hadoop-3.4.0/bin/hdfs dfs -mkdir -p /spark-logs
 
   - name: Create spark-history.service
     ansible.builtin.copy:

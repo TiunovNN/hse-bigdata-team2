@@ -122,10 +122,10 @@
     become_method: sudo
     become_flags: '-i -S'
     loop:
-      - hdfs dfs -mkdir -p /tmp
-      - hdfs dfs -mkdir -p /user/hive/warehouse
-      - hdfs dfs -chmod g+w /tmp
-      - hdfs dfs -chmod g+w /user/hive/warehouse
+      - /home/hadoop/hadoop-3.4.0/bin/hdfs dfs -mkdir -p /tmp
+      - /home/hadoop/hadoop-3.4.0/bin/hdfs dfs -mkdir -p /user/hive/warehouse
+      - /home/hadoop/hadoop-3.4.0/bin/hdfs dfs -chmod g+w /tmp
+      - /home/hadoop/hadoop-3.4.0/bin/hdfs dfs -chmod g+w /user/hive/warehouse
       - schematool -dbType postgres -initOrUpgradeSchema
 
   - name: Create hive.service

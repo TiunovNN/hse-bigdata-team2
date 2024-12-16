@@ -95,13 +95,6 @@
         export JAVA_HOME={{ java_home.stdout }}
         export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
 
-  - name: Source .profile and run a command
-    ansible.builtin.shell: |
-      source ~/.profile
-      echo "PATH after sourcing .profile: $PATH"
-    args:
-      executable: /bin/bash
-
   - name: Configure hadoop environment variables in hadoop-env.sh
     ansible.builtin.blockinfile:
       path: /home/hadoop/hadoop-3.4.0/etc/hadoop/hadoop-env.sh
