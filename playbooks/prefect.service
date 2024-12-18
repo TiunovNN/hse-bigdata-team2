@@ -1,0 +1,15 @@
+[Unit]
+Description=Prefect Server
+After=network.target
+
+[Service]
+User=hadoop
+Group=hadoop
+WorkingDirectory=/home/hadoop/flows
+ExecStart=/home/hadoop/flows/prefect_env/bin/prefect server start
+Restart=always
+Environment="PATH=/home/hadoop/flows/prefect_env/bin:$PATH"
+Environment="PREFECT_API_URL=http://localhost:4200"
+
+[Install]
+WantedBy=multi-user.target

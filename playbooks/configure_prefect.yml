@@ -1,0 +1,94 @@
+- name: Install Prefect on node1
+  gather_facts: yes
+  hosts:
+    - node1
+  tasks:
+    - name: Create dir for flows
+      ansible.builtin.file:
+        path: /home/hadoop/flows
+        state: directory
+        mode: '0755'
+      become: yes
+
+    - name: Ensure Python is installed
+      ansible.builtin.package:
+        name: 
+          - python3
+          - python3-venv
+          - python3-pip
+        state: present
+        update_cache: yes
+      become: yes
+
+    - name: Create a venv
+      ansible.builtin.command:
+        cmd: python3 -m venv /home/hadoop/flows/prefect_env
+        creates: /home/hadoop/flows/prefect_env
+      become: yes
+      become_user: hadoop
+      become_method: sudo
+      become_flags: '-i -S'
+
+    - name: Change permissions for the venv directory
+      file:
+        path: /home/hadoop/flows/prefect_env
+        state: directory
+        mode: '0777'
+        recurse: yes
+
+    - name: Install Prefect and other deps in the venv
+      ansible.builtin.command:
+        cmd: /home/hadoop/flows/prefect_env/bin/pip install -U prefect onetl
+
+    - name: Copy csv
+      ansible.builtin.copy:
+        src: ../sample_data.csv
+        dest: /home/hadoop/flows/sample_data.csv
+      become: yes
+
+    - name: Copy flow
+      ansible.builtin.copy:
+        src: ./prefect_flow.py
+        dest: /home/hadoop/flows/prefect_flow.py
+      become: yes
+
+    - name: Configure HDFS for data
+      ansible.builtin.shell: "{{ item }}"
+      become: yes
+      become_user: hadoop
+      become_method: sudo
+      become_flags: '-i -S'
+      loop:
+        - /home/hadoop/hadoop-3.4.0/bin/hdfs dfs -mkdir -p /input
+        - /home/hadoop/hadoop-3.4.0/bin/hdfs dfs -mkdir -p /output
+        - /home/hadoop/hadoop-3.4.0/bin/hdfs dfs -put -f /home/hadoop/flows/sample_data.csv /input/sample_data.csv
+
+    - name: Create prefect.service
+      ansible.builtin.copy:
+        src: ./prefect.service
+        dest: /etc/systemd/system/prefect.service
+
+    - name: Enable prefect service
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+        enabled: true
+        name: prefect.service
+        state: started
+
+    # - name: Run Prefect Deployment Script
+    #   ansible.builtin.shell: |
+    #     source /home/hadoop/.profile
+    #     source /home/hadoop/flows/prefect_env/bin/activate
+    #     python /home/hadoop/flows/prefect_flow.py
+    #   args:
+    #     executable: /bin/bash
+    #   environment:
+    #     PREFECT_HOME: "/home/hadoop/flows/prefect_env"
+    #   register: result
+    #   become: yes
+    #   become_user: hadoop
+    #   become_method: sudo
+    #   become_flags: '-i -S'
+
+
+    
