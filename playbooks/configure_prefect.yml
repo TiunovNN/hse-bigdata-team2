@@ -43,7 +43,9 @@
         block: |
           export PREFECT_HOME=/home/hadoop/flows/prefect_env
           export PREFECT_API_URL=http://localhost:4200/api
-          export HDFS_HOST=team-2-nn
+          export HDFS_HOST={{ namenode }}
+        vars:
+          namenode: "{{ groups['namenodes'] | map('extract', hostvars, 'ansible_hostname') | first }}"
 
     - name: Copy csv
       ansible.builtin.copy:
