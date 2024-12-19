@@ -168,4 +168,24 @@ ansible-playbook -i inventory playbooks/configure_spark.yml
 
 ### Работа с данными
 
-**TODO**
+## Homework 5
+
+Использование реализация регулярного процесса чтения, трансформации и записи данных под управлением оркестратора (Prefect или Apache Airflow по выбору)
+
+📌 В рамках потока (prefect) или ОАГ (Airflow)
+* Запустить сессию Apache Spark под управлением YARN, развернутого кластера в предыдущих заданиях
+* Подключиться к кластеру HDFS развернутому в предыдущих заданиях
+* Используя созданную ранее сессию Spark, прочитать данные, которые были предварительно загружены на HDFS
+* Провести несколько трансформаций данных (например, агрегацию или преобразование типов)
+* Сохранить данные как таблицу
+
+
+### Запуск настройки
+
+```shell
+ansible-playbook -i inventory playbooks/configure_prefect.yml
+```
+Либо раскоментировать последний таск в `playbooks/configure_prefect.yml`
+Либо выполнить следующие команды на неймноде под пользователем hadoop (чтоб видеть логи):
+* source /home/hadoop/flows/prefect_env/bin/activate
+* python /home/hadoop/flows/prefect_flow.py
