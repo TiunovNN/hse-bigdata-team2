@@ -46,7 +46,7 @@ def extract_data(spark):
     return df
 
 
-@task
+@task(cache_policy=None)
 def transform_data(_df):
     df = _df.toDF(*[column.replace('\r', '') for column in _df.columns])
     df = df.select([regexp_replace(col(column), r'\r', '').alias(column) for column in df.columns])
