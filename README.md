@@ -181,12 +181,13 @@ ansible-playbook -i inventory playbooks/configure_spark.yml
 
 
 ### Запуск настройки
+Поменять хост на ваш в таске 
+* Configure prefect environment variables in ~/.profile
 
 ```shell
 ansible-playbook -i inventory playbooks/configure_prefect.yml
 ```
 Либо раскоментировать последний таск в `playbooks/configure_prefect.yml`
 Либо выполнить следующие команды на неймноде под пользователем hadoop (чтоб видеть логи):
-* source /home/hadoop/.profile
 * source /home/hadoop/flows/prefect_env/bin/activate
 * python /home/hadoop/flows/prefect_flow.py

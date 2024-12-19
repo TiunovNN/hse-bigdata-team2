@@ -14,10 +14,12 @@ from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 from pyspark.sql.functions import col, year, month, avg, monotonically_increasing_id, regexp_replace
 
+from prefect.logging import get_run_logger
+
 from prefect import flow, task
 
 
-@task
+@task(cache_policy=None)
 def create_session():
     # Building spark session for Hive
     # spark = SparkSession.builder \
@@ -35,9 +37,9 @@ def create_session():
     return spark
 
 
-@task
+@task(cache_policy=None)
 def extract_data(spark):
-    hdfs = SparkHDFS(host="team-2-nn", port=9000, spark=spark, cluster="test")
+    hdfs = SparkHDFS(host=os.environ['HDFS_HOST'], port=9000, spark=spark, cluster="test")
     hdfs.check()
     reader = FileDFReader(connection=hdfs, format=CSV(delimiter=";", header=True), source_path="/input")
     df = reader.run(["sample_data.csv"])
@@ -101,7 +103,7 @@ def transform_data(_df):
     return df
 
 
-@task
+@task(cache_policy=None)
 def load_data(df, spark):
     # Saving the DataFrame to Hive 
     # hive = Hive(spark=spark, cluster='test')
@@ -118,12 +120,13 @@ def load_data(df, spark):
 
 @flow
 def process_data():
+    logger = get_run_logger()
     spark_sess = create_session()
-    print('SESSION CREATED')
+    logger.info('SESSION CREATED')
     edata = extract_data(spark=spark_sess)
-    print('DATA EXTRACTED')
+    logger.info('DATA EXTRACTED')
     tdata = transform_data(_df=edata)
-    print('DATA TRANSFORMED')
+    logger.info('DATA TRANSFORMED')
     load_data(df=tdata, spark=spark_sess)
 
 

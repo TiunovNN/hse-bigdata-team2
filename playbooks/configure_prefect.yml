@@ -1,13 +1,15 @@
 - name: Install Prefect on node1
   gather_facts: yes
   hosts:
-    - node1
+    - namenodes
   tasks:
     - name: Create dir for flows
       ansible.builtin.file:
         path: /home/hadoop/flows
         state: directory
         mode: '0755'
+        group: hadoop
+        owner: hadoop
       become: yes
 
     - name: Ensure Python is installed
@@ -20,25 +22,29 @@
         update_cache: yes
       become: yes
 
-    - name: Create a venv
-      ansible.builtin.command:
-        cmd: python3 -m venv /home/hadoop/flows/prefect_env
-        creates: /home/hadoop/flows/prefect_env
+    - name: Install Prefect and other deps in the venv
+      ansible.builtin.pip:
+        name:
+          - prefect
+          - onetl
+        virtualenv: /home/hadoop/flows/prefect_env
+        virtualenv_command: "python3 -m venv"
       become: yes
       become_user: hadoop
       become_method: sudo
       become_flags: '-i -S'
 
-    - name: Change permissions for the venv directory
-      file:
-        path: /home/hadoop/flows/prefect_env
-        state: directory
-        mode: '0777'
-        recurse: yes
+    - name: Configure prefect environment variables in ~/.profile
+      ansible.builtin.blockinfile:
+        path: /home/hadoop/.profile
+        append_newline: true
+        prepend_newline: true
+        marker: "# {mark} ANSIBLE MANAGED BLOCK PREFECT"
+        block: |
+          export PREFECT_HOME=/home/hadoop/flows/prefect_env
+          export PREFECT_API_URL=http://localhost:4200/api
+          export HDFS_HOST=team-2-nn
 
-    - name: Install Prefect and other deps in the venv
-      ansible.builtin.command:
-        cmd: /home/hadoop/flows/prefect_env/bin/pip install -U prefect onetl
 
     - name: Copy csv
       ansible.builtin.copy:
@@ -59,9 +65,9 @@
       become_method: sudo
       become_flags: '-i -S'
       loop:
-        - /home/hadoop/hadoop-3.4.0/bin/hdfs dfs -mkdir -p /input
-        - /home/hadoop/hadoop-3.4.0/bin/hdfs dfs -mkdir -p /output
-        - /home/hadoop/hadoop-3.4.0/bin/hdfs dfs -put -f /home/hadoop/flows/sample_data.csv /input/sample_data.csv
+        - hdfs dfs -mkdir -p /input
+        - hdfs dfs -mkdir -p /output
+        - hdfs dfs -put -f /home/hadoop/flows/sample_data.csv /input/sample_data.csv
 
     - name: Create prefect.service
       ansible.builtin.copy:
@@ -77,8 +83,8 @@
 
     # - name: Run Prefect Deployment Script
     #   ansible.builtin.shell: |
-    #     source /home/hadoop/.profile
     #     source /home/hadoop/flows/prefect_env/bin/activate
+    #     export HDFS_HOST=team-2-nn
     #     python /home/hadoop/flows/prefect_flow.py
     #   args:
     #     executable: /bin/bash
