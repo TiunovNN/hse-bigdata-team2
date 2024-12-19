@@ -45,17 +45,20 @@
           export PREFECT_API_URL=http://localhost:4200/api
           export HDFS_HOST=team-2-nn
 
-
     - name: Copy csv
       ansible.builtin.copy:
         src: ../sample_data.csv
         dest: /home/hadoop/flows/sample_data.csv
+        owner: hadoop
+        group: hadoop
       become: yes
 
     - name: Copy flow
       ansible.builtin.copy:
         src: ./prefect_flow.py
         dest: /home/hadoop/flows/prefect_flow.py
+        owner: hadoop
+        group: hadoop
       become: yes
 
     - name: Configure HDFS for data
