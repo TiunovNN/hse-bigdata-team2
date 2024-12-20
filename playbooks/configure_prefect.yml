@@ -1,7 +1,9 @@
-- name: Install Prefect on node1
+- name: Install Prefect on namenodes
   gather_facts: yes
   hosts:
     - namenodes
+  vars:
+    namenode: "{{ groups['namenodes'] | map('extract', hostvars, 'ansible_hostname') | first }}"
   tasks:
     - name: Create dir for flows
       ansible.builtin.file:
@@ -44,8 +46,6 @@
           export PREFECT_HOME=/home/hadoop/flows/prefect_env
           export PREFECT_API_URL=http://localhost:4200/api
           export HDFS_HOST={{ namenode }}
-        vars:
-          namenode: "{{ groups['namenodes'] | map('extract', hostvars, 'ansible_hostname') | first }}"
 
     - name: Copy csv
       ansible.builtin.copy:
@@ -74,32 +74,16 @@
         - hdfs dfs -mkdir -p /output
         - hdfs dfs -put -f /home/hadoop/flows/sample_data.csv /input/sample_data.csv
 
-    - name: Create prefect.service
-      ansible.builtin.copy:
-        src: ./prefect.service
-        dest: /etc/systemd/system/prefect.service
-
-    - name: Enable prefect service
-      ansible.builtin.systemd_service:
-        daemon_reload: true
-        enabled: true
-        name: prefect.service
-        state: started
-
-    # - name: Run Prefect Deployment Script
-    #   ansible.builtin.shell: |
-    #     source /home/hadoop/flows/prefect_env/bin/activate
-    #     export HDFS_HOST=team-2-nn
-    #     python /home/hadoop/flows/prefect_flow.py
-    #   args:
-    #     executable: /bin/bash
-    #   environment:
-    #     PREFECT_HOME: "/home/hadoop/flows/prefect_env"
-    #   register: result
-    #   become: yes
-    #   become_user: hadoop
-    #   become_method: sudo
-    #   become_flags: '-i -S'
-
-
-    
+    - name: Run Prefect Deployment Script
+      ansible.builtin.shell: |
+        source /home/hadoop/flows/prefect_env/bin/activate
+        nohup python /home/hadoop/flows/prefect_flow.py &> /home/hadoop/flows/server.log &
+      args:
+        executable: /bin/bash
+      environment:
+        PREFECT_HOME: "/home/hadoop/flows/prefect_env"
+      register: result
+      become: yes
+      become_user: hadoop
+      become_method: sudo
+      become_flags: '-i -S'

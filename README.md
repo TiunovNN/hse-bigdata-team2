@@ -185,7 +185,7 @@ ansible-playbook -i inventory playbooks/configure_spark.yml
 ```shell
 ansible-playbook -i inventory playbooks/configure_prefect.yml
 ```
-Либо раскоментировать последний таск в `playbooks/configure_prefect.yml`
-Либо выполнить следующие команды на неймноде под пользователем hadoop (чтоб видеть логи):
-* source /home/hadoop/flows/prefect_env/bin/activate
-* python /home/hadoop/flows/prefect_flow.py
+В данном случае процесс запускается в фоновом режиме. 
+Чтоб его убить, надо найти его PID через `ps aux | grep python` и убить через `kill PID`.
+Лучше способа реализовать работу флоу в фоновом режиме без контейнера не предложили даже разработчики:
+https://github.com/PrefectHQ/prefect/issues/11522#issuecomment-1976843871 
