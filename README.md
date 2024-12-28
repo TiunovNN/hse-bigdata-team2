@@ -193,12 +193,82 @@ https://github.com/PrefectHQ/prefect/issues/11522#issuecomment-1976843871
 
 ## Homework 6
 
-• Создать таблицу с данными в GreenPlum, соответствующая вашему имени пользователя user*.
-• В таблице лежат те же данные, что мы использовали на предыдущих занятиях.
-• К таблице можно применить запрос SELECT и он успешно выдает данные.
+### Задача
+1. Создать таблицу с данными в GreenPlum, соответствующую вашему имени пользователя `user*`.
+2. В таблице должны лежать те же данные, что использовались на предыдущих занятиях.
+3. Таблица должна успешно возвращать данные по запросу `SELECT`.
 
 ### Выполнение задания
 
+#### Шаг 1: Вход на сервер
+```bash
+ssh user@91.185.85.179
+```
 
+#### Шаг 2: Если bash не видит утилиту `psql`, выполняем команду
+```bash
+source /usr/local/greenplum-db/greenplum_path.sh
+```
 
+#### Шаг 3: Подключаемся к базе данных
+```bash
+psql -d idp
+```
 
+#### Шаг 4: Подготовка данных
+
+**4.1** Подгружаем данные из репозитория:
+```bash
+wget https://raw.githubusercontent.com/TiunovNN/hse-bigdata-team2/master/sample_data.csv -O sample_data.csv
+```
+
+**4.2** Переименовываем файл:
+```bash
+mv sample_data.csv team-2-data.csv
+```
+
+**4.3** Создаем папку на сервере:
+```bash
+ssh user@91.185.85.179 "mkdir -p ~/team-2-data"
+```
+
+**4.4** Отправляем файл на сервер:
+```bash
+scp team-2-data.csv user@91.185.85.179:~/team-2-data/
+```
+
+#### Шаг 5: Запускаем `gpfdist` в отдельной вкладке консоли
+```bash
+cd ~/team-2-data/
+gpfdist
+```
+
+#### Шаг 6: Создаем EXTERNAL таблицу
+```sql
+CREATE EXTERNAL TABLE team_2_data_external (
+    date TEXT,
+    price_A DOUBLE PRECISION,
+    price_B DOUBLE PRECISION,
+    price_C DOUBLE PRECISION,
+    price_D DOUBLE PRECISION,
+    price_E DOUBLE PRECISION
+)
+LOCATION ('gpfdist://0.0.0.0:8080/team-2-data/team-2-data.csv')
+FORMAT 'CSV' (DELIMITER ';' HEADER);
+```
+
+#### Шаг 7: Проверяем данные в EXTERNAL таблице
+```sql
+SELECT * FROM team_2_data_external;
+```
+
+#### Шаг 8: Создаем внутреннюю таблицу (internal)
+```sql
+CREATE TABLE team_2_data_internal AS 
+SELECT * FROM team_2_data_external;
+```
+
+#### Шаг 9: Проверяем данные во внутренней таблице
+```sql
+SELECT * FROM team_2_data_internal;
+```
