@@ -189,3 +189,144 @@ ansible-playbook -i inventory playbooks/configure_prefect.yml
 Чтоб его убить, надо найти его PID через `ps aux | grep python` и убить через `kill PID`.
 Лучше способа реализовать работу флоу в фоновом режиме без контейнера не предложили даже разработчики:
 https://github.com/PrefectHQ/prefect/issues/11522#issuecomment-1976843871 
+
+
+## Homework 6
+
+### Задача
+1. Создать таблицу с данными в GreenPlum, соответствующую вашему имени пользователя `user*`.
+2. В таблице должны лежать те же данные, что использовались на предыдущих занятиях.
+3. Таблица должна успешно возвращать данные по запросу `SELECT`.
+
+### Выполнение задания
+
+#### Шаг 1: Вход на сервер
+```bash
+ssh user@91.185.85.179
+```
+
+#### Шаг 2: Если bash не видит утилиту `psql`, выполняем команду
+```bash
+source /usr/local/greenplum-db/greenplum_path.sh
+```
+
+#### Шаг 3: Подключаемся к базе данных
+```bash
+psql -d idp
+```
+
+#### Шаг 4: Подготовка данных
+
+**4.1** Подгружаем данные из репозитория:
+```bash
+wget https://raw.githubusercontent.com/TiunovNN/hse-bigdata-team2/master/sample_data.csv -O sample_data.csv
+```
+
+**4.2** Переименовываем файл:
+```bash
+mv sample_data.csv team-2-data.csv
+```
+
+**4.3** Создаем папку на сервере:
+```bash
+ssh user@91.185.85.179 "mkdir -p ~/team-2-data"
+```
+
+**4.4** Отправляем файл на сервер:
+```bash
+scp team-2-data.csv user@91.185.85.179:~/team-2-data/
+```
+
+#### Шаг 5: Запускаем `gpfdist` в отдельной вкладке консоли
+```bash
+cd ~/team-2-data/
+gpfdist
+```
+
+#### Шаг 6: Создаем EXTERNAL таблицу
+```sql
+CREATE EXTERNAL TABLE team_2_data_external (
+    date TEXT,
+    price_A DOUBLE PRECISION,
+    price_B DOUBLE PRECISION,
+    price_C DOUBLE PRECISION,
+    price_D DOUBLE PRECISION,
+    price_E DOUBLE PRECISION
+)
+LOCATION ('gpfdist://0.0.0.0:8080/team-2-data/team-2-data.csv')
+FORMAT 'CSV' (DELIMITER ';' HEADER);
+```
+
+#### Шаг 7: Проверяем данные в EXTERNAL таблице
+```sql
+SELECT * FROM team_2_data_external;
+```
+
+#### Шаг 8: Создаем внутреннюю таблицу (internal)
+```sql
+CREATE TABLE team_2_data_internal AS 
+SELECT * FROM team_2_data_external;
+```
+
+#### Шаг 9: Проверяем данные во внутренней таблице
+```sql
+SELECT * FROM team_2_data_internal;
+```
+
+
+
+## Homework 7
+
+### Задача
+1. Получить доступ к Apache Superset.
+2. Создать дашборд с визуализациями, использующими данные с прошлых семинаров.
+
+### Выполнение задания
+
+#### Шаг 1: Вход в Apache Superset
+Открываем браузер и переходим по адресу:  
+[http://91.185.86.67:8080/](http://91.185.86.67:8080/)
+
+Вводим учетные данные:  
+**Логин:** `user`  
+**Пароль:** `4!4v$6IGP%kdVLYR`
+
+#### Шаг 2: Настройка подключения к базе данных
+1. В верхнем меню переходим в **Settings → Database Connections**.
+2. Нажимаем **+ DATABASE**, выбираем **PostgreSQL**.
+3. Указываем параметры подключения:  
+   - **Host:** `91.185.85.179`  
+   - **Port:** `5432`  
+   - **Database name:** `idp`  
+   - **Username:** `user`  
+   - **Display Name:** `PostgreSQL_connection_team2`  
+4. Подключаемся к базе данных.
+
+#### Шаг 3: Проверка подключения
+1. В меню выбираем **SQL Lab**.
+2. В выпадающем списке **Database** выбираем **PostgreSQL_connection_team2**.
+3. Указываем **Schema:** `public`.
+4. Проверяем таблицу `team_2_data_internal`, убедившись, что данные доступны.
+
+#### Шаг 4: Сохранение таблицы как Dataset
+1. В **SQL Lab** выбираем таблицу `team_2_data_internal`.
+2. Нажимаем на три точки напротив **Chart Source**.
+3. Выбираем **Save as dataset** и указываем название: `team_2_dataset_saved`.
+
+#### Шаг 5: Создание визуализаций
+1. Нажимаем **Create Chart**.
+2. Используя сохраненный Dataset (`team_2_dataset_saved`), создаем следующие визуализации:
+   - **Таблица** (Table).
+   - **Ящик с усами** (Box Plot).
+   - **Гистограмма** (Histogram).
+   - **Диаграмма рассеяния** (Scatter Plot).
+3. Для каждой визуализации нажимаем **Save**.
+
+#### Шаг 6: Создание дашборда
+1. Переходим в меню **Dashboards**.
+2. Нажимаем **+ Dashboard** и задаем название: `team_2_dashboard`.
+3. Добавляем созданные визуализации в дашборд.
+4. Меняем статус дашборда на **Published**.
+
+#### Результат
+Создан дашборд `team_2_dashboard`, содержащий визуализации, использующие данные с предыдущих семинаров.
